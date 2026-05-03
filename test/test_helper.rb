@@ -32,7 +32,10 @@ class Minitest::Test
         write_fixture_file(source, path, content)
       end
 
-      site = Jekyll::Site.new(Jekyll.configuration(default_config(source, destination).merge(config)))
+      site_config = default_config(source, destination).merge(config)
+      site_config.delete_if { |_key, value| value == :absent }
+
+      site = Jekyll::Site.new(Jekyll.configuration(site_config))
       site.process
 
       yield site, destination
@@ -44,16 +47,16 @@ class Minitest::Test
       "source" => source,
       "destination" => destination,
       "title" => "Fixture Site",
-      "description" => "Fixture description.",
-      "url" => "https://example.com",
-      "baseurl" => "/base",
+      "description" => " Fixture description. ",
+      "url" => "https://example.com/",
+      "baseurl" => "/base/",
       "permalink" => "/blog/:title",
       "quiet" => true,
       "llms" => {
         "markdown" => true,
         "llms_txt" => true,
         "include" => %w[pages posts],
-        "exclude" => ["/404.html", "/assets/**"],
+        "exclude" => ["/{404.html,url-skip,markdown-output.md}", "/assets/**"],
       },
     }
   end
