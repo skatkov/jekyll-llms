@@ -12,7 +12,10 @@ module Jekyll
 
       def write
         write_index if config.llms_txt?
-        write_markdown if config.markdown?
+        if config.markdown?
+          write_markdown
+          write_html_links
+        end
       end
 
       private
@@ -27,6 +30,10 @@ module Jekyll
         entries.each do |entry|
           files.write(entry.url.markdown_path, MarkdownSource.new(site: site, item: entry.item).content)
         end
+      end
+
+      def write_html_links
+        HtmlLinker.new(site: site, entries: entries).write
       end
     end
   end
