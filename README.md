@@ -1,41 +1,35 @@
 # jekyll-llms
 
-Generate LLM-friendly files for Jekyll sites.
+Jekyll plugin that produces LLM-friendly formats alongside a regular website.
+
+Namely: `llms.txt`, Markdown sidecars, and HTML alternate links to sidecars.
 
 ## Installation
 
-Add the gem to your Jekyll site:
-
+Add to `Gemfile` and run `bundle install`
 ```ruby
 group :jekyll_plugins do
   gem "jekyll-llms"
 end
 ```
 
-Enable the plugin in `_config.yml`:
+Add to `_config` file:
 
 ```yaml
 plugins:
   - jekyll-llms
-
-llms:
-  markdown: true
-  llms_txt: true
 ```
 
-## What It Generates
 
-- `llms.txt`: a Markdown index of included pages, posts, and collection documents.
-- `.md` sidecars: source-content mirrors for included pages, posts, and collection documents.
-- HTML cross-references: generated HTML pages include a `<link rel="alternate" type="text/markdown">` tag that points to their `.md` sidecar.
+## Output
 
-The plugin does not convert HTML to Markdown. It removes front matter, renders Liquid in the source body, and writes the result as-is.
+- `/llms.txt`: Markdown index of included entries.
+- `*.md`: source-body sidecars for included entries.
+- HTML `<link rel="alternate" type="text/markdown" href="...">` tags pointing to sidecars.
 
-When Markdown sidecars are enabled, `llms.txt` links to the generated `.md` files instead of the original site URLs. HTML pages also link back to those sidecars: `/about.html` references `/about.md`, and `/docs/` references `/docs/index.md`.
+Sidecars are source bodies, not HTML-to-Markdown conversions. Front matter is removed. Liquid is rendered unless `render_with_liquid: false` is set.
 
 ## Configuration
-
-All options live under `llms` in `_config.yml`:
 
 ```yaml
 llms:
@@ -49,12 +43,12 @@ llms:
     - /assets/**
 ```
 
-- `markdown`: generate `.md` sidecars, link `llms.txt` entries to them, and add alternate Markdown links to generated HTML pages. Set to `false` to skip sidecars and link to original URLs.
-- `llms_txt`: generate `llms.txt`. Set to `false` if you only want sidecars.
-- `include`: sections to include. Supports `pages`, `posts`, and output collections by collection name.
-- `exclude`: URL, generated Markdown path, or source path patterns to skip. Glob patterns such as `/assets/**` and `/{404.html,feed.xml}` are supported.
+- `markdown`: generate sidecars, link `llms.txt` to sidecars, and add HTML alternate links. Default: `true`.
+- `llms_txt`: generate `/llms.txt`. Default: `true`.
+- `include`: `pages`, `posts`, and output collection names. Default: `[pages, posts]`.
+- `exclude`: URL, Markdown path, or source path globs. Default: `[]`.
 
-Use front matter to exclude a single page or document:
+Per-entry opt-out:
 
 ```yaml
 llms: false
