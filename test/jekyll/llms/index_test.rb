@@ -6,13 +6,15 @@ class JekyllLlmsIndexTest < Minitest::Test
   cover "Jekyll::Llms::Index"
 
   def test_renders_title_description_sections_and_markdown_links
-    content = Jekyll::Llms::Index.new(
+    entries = [
+      entry(section: "pages", title: "Home", description: "Home page.", url: "/"),
+      entry(section: "api_guides", title: "Intro", description: "", url: "/guides/intro"),
+    ]
+
+    content = index(
       site: site("title" => "Fixture Site", "description" => " Fixture description. "),
-      entries: [
-        entry(section: "pages", title: "Home", description: "Home page.", url: "/"),
-        entry(section: "api_guides", title: "Intro", description: "", url: "/guides/intro"),
-      ],
-      markdown: true
+      entries: entries,
+      url_for: markdown_urls
     ).content
 
     assert_equal <<~TEXT, content
@@ -31,10 +33,10 @@ class JekyllLlmsIndexTest < Minitest::Test
   end
 
   def test_uses_default_title_omits_missing_description_and_keeps_original_links
-    content = Jekyll::Llms::Index.new(
+    content = index(
       site: site({}),
       entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
-      markdown: false
+      url_for: original_urls
     ).content
 
     assert_equal <<~TEXT, content
@@ -48,17 +50,39 @@ class JekyllLlmsIndexTest < Minitest::Test
   end
 
   def test_keeps_original_links_for_non_markdown_sources
-    content = Jekyll::Llms::Index.new(
+    content = index(
       site: site({}),
       entries: [entry(section: "pages", title: "Home", description: "", url: "/", relative_path: "index.html")],
-      markdown: true
+      url_for: original_urls
     ).content
 
     assert_includes content, "- [Home](https://example.com/base/)"
     refute_includes content, "index.md"
   end
 
+  def test_uses_supplied_entry_urls
+    content = index(
+      site: site({}),
+      entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
+      url_for: ->(_entry) { "https://example.com/custom" }
+    ).content
+
+    assert_includes content, "- [Home](https://example.com/custom)"
+  end
+
   private
+
+  def index(site:, entries:, url_for:)
+    Jekyll::Llms::Index.new(site: site, entries: entries, url_for: url_for)
+  end
+
+  def markdown_urls
+    ->(entry) { entry.url.absolute(markdown: true) }
+  end
+
+  def original_urls
+    ->(entry) { entry.url.absolute(markdown: false) }
+  end
 
   def site(config)
     defaults = {

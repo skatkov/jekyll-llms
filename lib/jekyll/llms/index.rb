@@ -3,10 +3,10 @@
 module Jekyll
   module Llms
     class Index
-      def initialize(site:, entries:, markdown:)
+      def initialize(site:, entries:, url_for:)
         @site = site
         @entries = entries
-        @markdown = markdown
+        @url_for = url_for
       end
 
       def content
@@ -25,7 +25,7 @@ module Jekyll
 
       private
 
-      attr_reader :site, :entries, :markdown
+      attr_reader :site, :entries, :url_for
 
       def title
         site.config.fetch("title", "Jekyll Site")
@@ -36,7 +36,7 @@ module Jekyll
       end
 
       def entry_line(entry)
-        line = "- [#{entry.title}](#{entry.url.absolute(markdown: markdown && entry.markdown_source?)})"
+        line = "- [#{entry.title}](#{url_for.call(entry)})"
         entry.description.empty? ? line : "#{line}: #{entry.description}"
       end
 

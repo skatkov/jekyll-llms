@@ -11,28 +11,44 @@ module Jekyll
       end
 
       def write
-        write_index if config.llms_txt?
-        if config.markdown?
-          write_markdown
-          write_html_links
-        end
+        markdown_entries = config.markdown? ? write_markdown : []
+
+        write_index(markdown_entries) if config.llms_txt?
+        write_html_links(markdown_entries)
       end
 
       private
 
       attr_reader :site, :config, :entries, :files
 
-      def write_index
-        files.write("llms.txt", Index.new(site: site, entries: entries, markdown: config.markdown?).content)
+      def write_index(markdown_entries)
+        files.write("llms.txt", Index.new(site: site, entries: entries, url_for: index_url(markdown_entries)).content)
       end
 
-      def write_markdown
-        markdown_entries.each do |entry|
-          files.write(entry.url.markdown_path, MarkdownSource.new(site: site, item: entry.item).content)
+      def index_url(markdown_entries)
+        lambda do |entry|
+          entry.url.absolute(markdown: markdown_entries.include?(entry))
         end
       end
 
-      def write_html_links
+      def write_markdown
+        markdown_entries.filter_map do |entry|
+          content = markdown_content(entry)
+          next unless content
+
+          files.write(entry.url.markdown_path, content)
+          entry
+        end
+      end
+
+      def markdown_content(entry)
+        MarkdownSource.new(site: site, item: entry.item).content
+      rescue Liquid::Error, SystemCallError => error
+        Jekyll.logger.warn("LLMs:", "Skipping markdown sidecar for #{entry.item.relative_path}: #{error}")
+        nil
+      end
+
+      def write_html_links(markdown_entries)
         HtmlLinker.new(site: site, entries: markdown_entries).write
       end
 
