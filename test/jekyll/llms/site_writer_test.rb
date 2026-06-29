@@ -94,8 +94,7 @@ class JekyllLlmsSiteWriterTest < Minitest::Test
       refute_includes read_output(destination, "invalid.html"), %(type="text/markdown")
       assert_includes read_output(destination, "llms.txt"), "- [Valid](https://example.com/base/valid.md)"
       assert_includes read_output(destination, "llms.txt"), "- [Invalid](https://example.com/base/invalid)"
-      assert_includes warnings.fetch(0), "LLMs:"
-      assert_includes warnings.fetch(0), "Skipping markdown sidecar for invalid.md: No such file or directory"
+      assert_recorded_warning warnings, "LLMs:", "Skipping markdown sidecar for invalid.md: No such file or directory"
     end
   end
 
@@ -134,8 +133,7 @@ class JekyllLlmsSiteWriterTest < Minitest::Test
 
       assert_equal "Valid body.\n", read_output(destination, "valid.md")
       refute_path_exists output_path(destination, "invalid.md")
-      assert_includes warnings.fetch(0), "LLMs:"
-      assert_includes warnings.fetch(0), "Skipping markdown sidecar for invalid.md"
+      assert_recorded_warning warnings, "LLMs:", "Skipping markdown sidecar for invalid.md"
     end
   end
 
@@ -256,13 +254,17 @@ class JekyllLlmsSiteWriterTest < Minitest::Test
       end
     end.new([])
     original_writer = Jekyll.logger.writer
-    original_level = Jekyll.logger.level
+    original_level = original_writer.level
     Jekyll.logger = writer
     Jekyll.logger.log_level = :warn
     yield
     writer.warnings
   ensure
     Jekyll.logger = original_writer
-    Jekyll.logger.log_level = original_level
+    original_writer.level = original_level
+  end
+
+  def assert_recorded_warning(warnings, *parts)
+    assert warnings.any? { |warning| parts.all? { |part| warning.include?(part) } }, warnings.inspect
   end
 end
