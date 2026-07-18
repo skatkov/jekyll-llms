@@ -11,6 +11,7 @@ class JekyllLlmsFileWriterTest < Minitest::Test
 
   def teardown
     FileUtils.rm_rf("nested")
+    super
   end
 
   def test_writes_nested_files_under_destination

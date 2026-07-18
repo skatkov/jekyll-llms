@@ -25,6 +25,11 @@ require_relative "support/mutant_setup"
 Jekyll.logger.log_level = :error
 
 class Minitest::Test
+  def teardown
+    Jekyll::Llms.reset_scope_builders!
+    super
+  end
+
   private
 
   def build_site(config = {}, files = {})

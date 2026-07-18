@@ -70,10 +70,89 @@ class JekyllLlmsIndexTest < Minitest::Test
     assert_includes content, "- [Home](https://example.com/custom)"
   end
 
+  def test_uses_title_and_description_overrides
+    content = index(
+      site: site("title" => "Fixture Site", "description" => "Fixture description."),
+      entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
+      url_for: original_urls,
+      title: "Category: fable",
+      description: "Posts in fable."
+    ).content
+
+    assert_equal <<~TEXT, content
+      # Category: fable
+
+      > Posts in fable.
+
+      ## Pages
+
+      - [Home](https://example.com/base/)
+    TEXT
+  end
+
+  def test_omits_empty_description_override
+    content = index(
+      site: site("title" => "Fixture Site", "description" => "Fixture description."),
+      entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
+      url_for: original_urls,
+      title: "Garden",
+      description: ""
+    ).content
+
+    assert_equal <<~TEXT, content
+      # Garden
+
+
+      ## Pages
+
+      - [Home](https://example.com/base/)
+    TEXT
+  end
+
+  def test_falls_back_to_site_title_and_description_without_overrides
+    content = index(
+      site: site("title" => "Fixture Site", "description" => " Fixture description. "),
+      entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
+      url_for: original_urls
+    ).content
+
+    assert_equal <<~TEXT, content
+      # Fixture Site
+
+      > Fixture description.
+
+      ## Pages
+
+      - [Home](https://example.com/base/)
+    TEXT
+  end
+
+  def test_allows_omitting_site_when_title_and_description_overrides_are_provided
+    content = Jekyll::Llms::Index.new(
+      entries: [entry(section: "pages", title: "Home", description: "", url: "/")],
+      url_for: original_urls,
+      title: "Category: fable",
+      description: "Category: fable"
+    ).content
+
+    assert_equal <<~TEXT, content
+      # Category: fable
+
+      > Category: fable
+
+      ## Pages
+
+      - [Home](https://example.com/base/)
+    TEXT
+  end
+
   private
 
-  def index(site:, entries:, url_for:)
-    Jekyll::Llms::Index.new(site: site, entries: entries, url_for: url_for)
+  def index(site:, entries:, url_for:, title: nil, description: nil)
+    kwargs = { site: site, entries: entries, url_for: url_for }
+    kwargs[:title] = title unless title.nil?
+    kwargs[:description] = description unless description.nil?
+    Jekyll::Llms::Index.new(**kwargs)
   end
 
   def markdown_urls
